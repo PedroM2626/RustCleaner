@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::fs;
+
 use walkdir::WalkDir;
 use rayon::prelude::*;
-use log::{info, warn, debug};
+use log::{info, warn};
 use serde::{Serialize, Deserialize};
 
 use crate::config::Config;

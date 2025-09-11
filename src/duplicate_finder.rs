@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::Read;
 use blake3::Hasher;
 use rayon::prelude::*;
-use log::{info, warn, error};
+use log::{info, warn};
 
 use crate::progress::{ProgressTracker, ProgressState};
 

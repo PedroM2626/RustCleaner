@@ -1,9 +1,10 @@
-use egui::{Context, Ui, Vec2, Color32, plot::{Plot, PlotPoints, Polygon}};
+use egui::{Context, Ui, Vec2, Color32};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use log::{info, error, warn};
+use log::{info, error};
+use dirs;
 
 use crate::scanner::{Scanner, ScanResult};
 use crate::duplicate_finder::DuplicateFinder;
@@ -63,14 +64,14 @@ impl DiskCleanerApp {
         let progress = Arc::clone(&self.progress);
         progress.lock().unwrap().reset();
         
-        let scan_path = self.scan_path.clone();
+        let _scan_path = self.scan_path.clone();
         let config = self.config.clone();
         
         thread::spawn(move || {
             let mut scanner = Scanner::new(config);
             match scanner.scan(&path, progress.clone()) {
                 Ok(results) => {
-                    progress.lock().unwrap().set_scan_complete(Some(results));
+                    progress.lock().unwrap().set_scan_complete(results);
                 }
                 Err(e) => {
                     error!("Scan failed: {}", e);
@@ -366,12 +367,14 @@ impl DiskCleanerApp {
         
         match &progress.state {
             ProgressState::Complete { scan_result: Some(results), .. } => {
-                self.scan_results = Some(results.clone());
+                let results = results.clone();
+                self.scan_results = Some(results);
                 self.is_scanning = false;
                 progress.state = ProgressState::Idle;
             },
             ProgressState::Complete { duplicates: Some(duplicates), .. } => {
-                self.duplicates = duplicates.clone();
+                let duplicates = duplicates.clone();
+                self.duplicates = duplicates;
                 progress.state = ProgressState::Idle;
             },
             ProgressState::Complete { cleaned_bytes: Some(bytes), .. } => {
@@ -382,7 +385,9 @@ impl DiskCleanerApp {
                 
                 // Refresh scan results after cleanup
                 if self.scan_results.is_some() {
+                    drop(progress); // Release the lock before calling start_scan
                     self.start_scan();
+                    return;
                 }
             },
             ProgressState::Error(_) => {
